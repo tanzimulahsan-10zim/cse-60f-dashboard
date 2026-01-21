@@ -1,888 +1,326 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CSE 60-F | CR Dashboard Pro</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSE 60-F | CR Dashboard Pro</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #0f172a; /* Slate 900 */
-            --secondary: #1e293b; /* Slate 800 */
-            --accent: #f97316; /* Orange 500 */
-            --bg: #f8fafc;
-            --white: #ffffff;
-            --glass: rgba(255, 255, 255, 0.85);
-            --green: #10b981;
-            --red: #ef4444;
-            --blue: #3b82f6;
-            --lab-bg: #ecfdf5;
-            --notice-bg: #fff7ed;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-            color: #334155;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding-bottom: 40px;
-        }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
-        header {
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            padding: 30px 0;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            border-bottom: 4px solid var(--accent);
-            margin-bottom: 25px;
-        }
-
-        header h1 {
-            margin: 0;
-            font-size: 1.8rem;
-            letter-spacing: -0.5px;
-            font-weight: 700;
-        }
-
-        #live-date {
-            font-weight: 300;
-            opacity: 0.8;
-            margin-top: 5px;
-            font-size: 0.9rem;
-        }
-
-        /* Notice Bar */
-        .notice-bar {
-            width: 92%;
-            max-width: 700px;
-            background: var(--notice-bg);
-            border-left: 5px solid var(--accent);
-            border-radius: 8px;
-            color: #9a3412;
-            margin: 0 auto 20px auto;
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            box-shadow: var(--shadow);
-            animation: slideIn 0.5s ease;
-            box-sizing: border-box;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .notice-bar svg {
-            width: 24px; height: 24px; fill: var(--accent); flex-shrink: 0;
-        }
-
-        /* Cards & Glassmorphism */
-        .card {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            width: 92%;
-            max-width: 700px;
-            margin: 15px 0;
-            padding: 25px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: var(--shadow);
-            text-align: center;
-            box-sizing: border-box;
-            transition: transform 0.3s ease;
-        }
-
-        .next-class-label {
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            font-size: 0.75rem;
-            color: var(--accent);
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        .next-class-name {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 15px;
-        }
-
-        .timer {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--primary);
-            font-variant-numeric: tabular-nums;
-            background: #f1f5f9;
-            display: inline-block;
-            padding: 5px 20px;
-            border-radius: 12px;
-            letter-spacing: 1px;
-        }
-
-        /* Task/Exam Cards Styles */
-        .task-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 15px;
-        }
-
-        .task-item {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            text-align: left;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border-left: 5px solid #ccc;
-            position: relative;
-        }
-
-        .task-type-ct { border-left-color: var(--red); }
-        .task-type-assign { border-left-color: var(--blue); }
-        .task-type-lab { border-left-color: var(--green); }
-
-        .task-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-        }
-
-        .task-badge {
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            padding: 2px 8px;
-            border-radius: 4px;
-            color: white;
-        }
-
-        .bg-ct { background: var(--red); }
-        .bg-assign { background: var(--blue); }
-        .bg-lab { background: var(--green); }
-
-        .task-date { font-size: 0.85rem; color: #64748b; font-weight: 600; }
-        .task-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin: 5px 0; }
-        .task-desc { font-size: 0.9rem; color: #475569; margin-bottom: 5px; }
-        .task-syllabus { font-size: 0.85rem; color: var(--accent); font-weight: 600; background: #fff7ed; padding: 4px 8px; border-radius: 4px; display: inline-block;}
-
-        .delete-task-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #fee2e2;
-            color: #ef4444;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Navigation Grid */
-        .nav-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            width: 92%;
-            max-width: 700px;
-            margin: 10px 0 25px 0;
-        }
-
-        .btn {
-            padding: 14px;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            color: white;
-            transition: all 0.2s ease;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }
-
-        .btn:active { transform: scale(0.98); }
-
-        .btn-routine { background: var(--primary); }
-        .btn-teacher { background: var(--secondary); }
-        .btn-att { background: var(--green); }
-        .btn-edit { background: #64748b; }
-        .btn-danger { background: var(--red); }
-
-        .btn:hover { filter: brightness(1.2); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); }
-
-        /* Attendance Styles */
-        .id-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .id-btn {
-            aspect-ratio: 1/1;
-            border: 2px solid #e2e8f0;
-            background: white;
-            border-radius: 10px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: #64748b;
-        }
-
-        .id-btn.present {
-            background: var(--green);
-            color: white;
-            border-color: var(--green);
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-        }
-
-        .att-box {
-            width: 100%;
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            padding: 12px;
-            font-family: 'Inter', monospace;
-            font-size: 0.85rem;
-            margin-top: 15px;
-            box-sizing: border-box;
-        }
-
-        /* Table Styling */
-        .content-section {
-            display: none;
-            width: 95%;
-            max-width: 1000px;
-            margin-top: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            background: var(--white);
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-        }
-
-        th {
-            background: var(--primary);
-            color: white;
-            padding: 15px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-        }
-
-        td {
-            padding: 15px 10px;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 0.85rem;
-            text-align: center;
-        }
-
-        .lab-highlight {
-            background: var(--lab-bg) !important;
-            color: #065f46;
-            font-weight: 600;
-        }
-
-        /* Teacher Cards */
-        .teacher-card {
-            background: var(--white);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 12px;
-            border-left: 6px solid var(--accent);
-            box-shadow: var(--shadow);
-        }
-
-        .teacher-card h4 {
-            margin: 0 0 8px 0;
-            color: var(--primary);
-            font-size: 1.1rem;
-        }
-
-        .teacher-card p {
-            margin: 4px 0;
-            font-size: 0.85rem;
-            color: #64748b;
-        }
-
-        /* Settings Inputs */
-        textarea, input, select {
-            width: 100%;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 12px;
-            font-family: inherit;
-            box-sizing: border-box;
-            margin-bottom: 10px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--secondary);
-        }
-
-        @media (max-width: 600px) {
-            .timer { font-size: 1.8rem; }
-            header h1 { font-size: 1.4rem; }
-            th, td { padding: 10px 5px; font-size: 0.7rem; }
-        }
-    </style>
+<style>
+/* ================= ROOT ================= */
+:root{
+--primary:#0f172a;
+--secondary:#1e293b;
+--accent:#f97316;
+--bg:#f8fafc;
+--glass:rgba(255,255,255,.85);
+--green:#10b981;
+--red:#ef4444;
+--blue:#3b82f6;
+--shadow:0 10px 15px -3px rgba(0,0,0,.1);
+}
+body{
+margin:0;
+font-family:Inter,sans-serif;
+background:linear-gradient(135deg,#f1f5f9,#e2e8f0);
+color:#334155;
+display:flex;
+flex-direction:column;
+align-items:center;
+padding-bottom:40px;
+}
+/* ================= HEADER ================= */
+header{
+width:100%;
+background:var(--primary);
+color:#fff;
+padding:28px 0;
+text-align:center;
+border-bottom:4px solid var(--accent);
+}
+header h1{margin:0;font-size:1.7rem}
+#live-date{opacity:.8;font-size:.9rem}
+/* ================= CARD ================= */
+.card{
+width:92%;
+max-width:700px;
+background:var(--glass);
+backdrop-filter:blur(10px);
+padding:25px;
+border-radius:20px;
+margin:15px 0;
+box-shadow:var(--shadow);
+text-align:center;
+}
+.timer{
+font-size:2.4rem;
+font-weight:800;
+background:#f1f5f9;
+padding:6px 20px;
+border-radius:12px;
+display:inline-block;
+}
+/* ================= NOTICE ================= */
+.notice-bar{
+width:92%;
+max-width:700px;
+background:#fff7ed;
+border-left:5px solid var(--accent);
+padding:15px;
+border-radius:10px;
+display:none;
+box-shadow:var(--shadow);
+}
+/* ================= NAV ================= */
+.nav-grid{
+width:92%;
+max-width:700px;
+display:grid;
+grid-template-columns:repeat(2,1fr);
+gap:12px;
+}
+.btn{
+padding:14px;
+border:none;
+border-radius:12px;
+color:#fff;
+font-weight:600;
+cursor:pointer;
+}
+.btn-routine{background:var(--primary)}
+.btn-teacher{background:var(--secondary)}
+.btn-att{background:var(--green)}
+.btn-edit{background:#64748b}
+/* ================= TASK ================= */
+.task-item{
+background:#fff;
+padding:15px;
+border-radius:12px;
+margin-bottom:12px;
+border-left:5px solid;
+}
+.task-type-ct{border-color:var(--red)}
+.task-type-assign{border-color:var(--blue)}
+.task-type-lab{border-color:var(--green)}
+/* ================= TABLE ================= */
+.content-section{display:none;width:95%;max-width:1000px}
+table{
+width:100%;
+border-collapse:collapse;
+background:#fff;
+border-radius:15px;
+overflow:hidden;
+}
+th{
+background:var(--primary);
+color:#fff;
+padding:12px;
+}
+td{
+padding:12px;
+border-bottom:1px solid #e2e8f0;
+text-align:center;
+}
+.lab-highlight{background:#ecfdf5;font-weight:700}
+/* ================= ATT ================= */
+.id-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(60px,1fr));
+gap:10px;
+}
+.id-btn{
+border:2px solid #e2e8f0;
+border-radius:10px;
+padding:10px;
+cursor:pointer;
+font-weight:700;
+}
+.id-btn.present{
+background:var(--green);
+color:#fff;
+}
+textarea,input,select{
+width:100%;
+padding:10px;
+border-radius:10px;
+border:1px solid #e2e8f0;
+margin-bottom:10px;
+}
+</style>
 </head>
+
 <body>
 
 <header>
-    <h1>CSE Batch 60-F Dashboard</h1>
-    <div id="live-date">Loading...</div>
+<h1>CSE Batch 60-F Dashboard</h1>
+<div id="live-date"></div>
 </header>
 
-<div id="notice-bar" class="notice-bar" style="display:none;">
-    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
-    <div class="notice-text" id="notice-text-display"></div>
+<div id="notice-bar" class="notice-bar">
+<div id="notice-text-display"></div>
 </div>
 
 <div class="card">
-    <div class="next-class-label">Upcoming Session</div>
-    <div id="next-class-name" class="next-class-name">Searching...</div>
-    <div id="countdown-timer" class="timer">00h 00m 00s</div>
+<div style="color:var(--accent);font-weight:700">Upcoming Session</div>
+<div id="next-class-name"></div>
+<div id="countdown-timer" class="timer">00h 00m 00s</div>
 </div>
 
-<div id="active-tasks-container" class="card" style="display: none;">
-    <div class="next-class-label" style="color: var(--primary); border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">
-        📢 Upcoming Tasks & Exams
-    </div>
-    <div id="task-board" class="task-list">
-        </div>
+<div id="active-tasks-container" class="card" style="display:none">
+<h3>📢 Upcoming Tasks</h3>
+<div id="task-board"></div>
 </div>
 
 <div class="nav-grid">
-    <button class="btn btn-routine" onclick="tryShowSection('full-table')">Routine</button>
-    <button class="btn btn-teacher" onclick="tryShowSection('teacher-info')">Teachers</button>
-    <button class="btn btn-att" onclick="tryShowProtectedSection('attendance-section')">Attendance</button>
-    <button class="btn btn-edit" onclick="tryShowProtectedSection('edit-panel')">Settings</button>
+<button class="btn btn-routine" onclick="show('full-table')">Routine</button>
+<button class="btn btn-teacher" onclick="show('teacher-info')">Teachers</button>
+<button class="btn btn-att" onclick="protectedShow('attendance-section')">Attendance</button>
+<button class="btn btn-edit" onclick="protectedShow('edit-panel')">Settings</button>
 </div>
 
+<!-- ================= CONTENT ================= -->
 <div id="attendance-section" class="content-section">
-    <div class="card" style="width: 100%; max-width: 700px; margin: auto;">
-        <h3>Attendance Assistant</h3>
-        <div id="add-id-container" style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <input id="add-id-input" placeholder="Enter Student ID" style="margin-bottom: 0;" />
-            <button class="btn btn-att" onclick="addStudentID()" style="min-width: 80px;">Add</button>
-        </div>
-        <div class="id-grid" id="id-container"></div>
-        <textarea id="attendance-output" class="att-box" rows="5" readonly></textarea>
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button class="btn btn-att" style="flex: 2;" onclick="copyAttendance()">Copy List</button>
-            <button class="btn btn-edit" style="flex: 1;" onclick="resetAttendance()">Reset</button>
-        </div>
-    </div>
+<div class="card">
+<h3>Attendance</h3>
+<div class="id-grid" id="id-container"></div>
+<textarea id="attendance-output" rows="5" readonly></textarea>
+</div>
 </div>
 
 <div id="teacher-info" class="content-section">
-    <div id="teacher-list" style="max-width: 700px; margin: auto;"></div>
+<div id="teacher-list"></div>
 </div>
 
 <div id="full-table" class="content-section">
-    <div style="overflow-x: auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th><th>Sat</th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th>
-                </tr>
-            </thead>
-            <tbody id="routine-body"></tbody>
-        </table>
-    </div>
+<table>
+<thead>
+<tr><th>Time</th><th>Sat</th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th></tr>
+</thead>
+<tbody id="routine-body"></tbody>
+</table>
 </div>
 
 <div id="edit-panel" class="content-section">
-    <div class="card" style="width: 100%; text-align: left;">
-        <h3 style="text-align: center; color: var(--primary);">CR Control Panel</h3>
-        
-        <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 25px;">
-            <h4 style="margin-top: 0; color: var(--accent);">➕ Add New Task / Exam</h4>
-            
-            <label class="form-label">Type</label>
-            <select id="task-type">
-                <option value="CT">Quiz / CT</option>
-                <option value="Assignment">Assignment</option>
-                <option value="Lab">Lab Evaluation</option>
-            </select>
+<div class="card" style="text-align:left">
+<h3>CR Control Panel</h3>
 
-            <div style="display: flex; gap: 10px;">
-                <div style="flex: 1;">
-                    <label class="form-label">Date</label>
-                    <input type="date" id="task-date">
-                </div>
-                <div style="flex: 1;">
-                    <label class="form-label">Time</label>
-                    <input type="time" id="task-time">
-                </div>
-            </div>
+<select id="task-type">
+<option value="CT">Quiz / CT</option>
+<option value="Assignment">Assignment</option>
+<option value="Lab">Lab</option>
+</select>
 
-            <label class="form-label">Topic / Syllabus</label>
-            <input type="text" id="task-topic" placeholder="e.g. Chapter 1-3">
+<input type="date" id="task-date">
+<input type="time" id="task-time">
+<input placeholder="Topic" id="task-topic">
+<textarea placeholder="Description" id="task-desc"></textarea>
 
-            <label class="form-label">Description (Optional)</label>
-            <textarea id="task-desc" rows="2" placeholder="Details..."></textarea>
+<button class="btn btn-att" onclick="addNewTask()">Add Task</button>
 
-            <button class="btn btn-att" style="width: 100%;" onclick="addNewTask()">Add to Dashboard</button>
-            
-            <div style="margin-top: 15px; border-top: 1px solid #ccc; padding-top: 10px;">
-                <h5 style="margin:0 0 10px 0;">Current Active Tasks:</h5>
-                <div id="settings-task-list"></div>
-            </div>
-        </div>
+<hr>
+<textarea id="json-teachers" placeholder="Teachers JSON"></textarea>
+<textarea id="json-classes" placeholder="Routine JSON"></textarea>
+<textarea id="notice-text" placeholder="Notice"></textarea>
 
-        <hr>
-
-        <label class="form-label">Teacher Database (JSON)</label>
-        <textarea id="json-teachers" style="height: 120px;"></textarea>
-        
-        <label class="form-label">Routine Data (JSON)</label>
-        <textarea id="json-classes" style="height: 120px;"></textarea>
-        
-        <label class="form-label">Global Notice (Top Bar)</label>
-        <textarea id="notice-text" style="height: 60px;"></textarea>
-        
-        <button class="btn btn-routine" style="width: 100%; margin-top: 20px;" onclick="saveData()">Save All Changes</button>
-    </div>
+<button class="btn btn-routine" onclick="saveData()">Save All</button>
+</div>
 </div>
 
 <script>
-// আপনার Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyDi6GkHtLaMqIQIQXkEk9g80iQmFrCyqs",
-      authDomain: "cse-60f-dashboard-56f50.firebaseapp.com",
-      databaseURL: "https://cse-60f-dashboard-56f50-default-rtdb.firebaseio.com",
-      projectId: "cse-60f-dashboard-56f50",
-      storageBucket: "cse-60f-dashboard-56f50.firebasestorage.app",
-      messagingSenderId: "213274939346",
-      appId: "1:213274939346:web:6d1adccc19a4d02ef4c20b"
-    };
+/* ================= FIREBASE ================= */
+firebase.initializeApp({
+apiKey:"AIzaSyDi6GkHtLaMqIQIQXkEk9g80iQmFrCyqs",
+authDomain:"cse-60f-dashboard-56f50.firebaseapp.com",
+databaseURL:"https://cse-60f-dashboard-56f50-default-rtdb.firebaseio.com"
+});
+const db=firebase.database();
+const ref=db.ref("dashboardData");
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const dashboardRef = db.ref('dashboardData'); // ডাটাবেস রেফারেন্স
+/* ================= GLOBAL ================= */
+const PASSWORD="1322";
+let appData=null;
+let presentIDs=[];
 
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const PROTECTED_PASSWORD = '1322';
+/* ================= LOAD ================= */
+ref.on("value",snap=>{
+appData=snap.val();
+renderAll();
+});
 
-    const defaultData = {
-        teachers: [
-            { name: "Rupak Sir", courses: "Software, Lab", email: "rupak@example.com", phone: "+88017...", classroom: "Classroom Code: abc" },
-            { name: "Anik Sir", courses: "Networking, Lab", email: "anik@example.com", phone: "+88018...", classroom: "Classroom Code: xyz" },
-            { name: "Tareq Sir", courses: "Cyber Security", email: "tareq@example.com", phone: "+88019...", classroom: "Classroom Code: 123" },
-            { name: "Jebu Mam", courses: "Drawing", email: "jebu@example.com", phone: "+88015...", classroom: "Classroom Code: 456" }
-        ],
-        classes: {
-            "MON_0845": { sub: "SOFTWARE Lab", tea: "Rupak Sir", room: "612", isLab: true },
-            "MON_1005": { sub: "SOFTWARE Lab", tea: "Rupak Sir", room: "612", isLab: true },
-            "MON_1125": { sub: "NETWORKING", tea: "Anik Sir", room: "501", isLab: false },
-            "MON_1315": { sub: "Cyber Security", tea: "Tareq Sir", room: "607", isLab: false },
-            "TUE_0845": { sub: "DRAWING", tea: "Jebu Mam", room: "308", isLab: false },
-            "TUE_1125": { sub: "SOFTWARE", tea: "Rupak Sir", room: "308", isLab: false },
-            "TUE_1315": { sub: "NETWORKING Lab", tea: "Anik Sir", room: "511", isLab: true },
-            "TUE_1435": { sub: "NETWORKING Lab", tea: "Anik Sir", room: "511", isLab: true },
-            "THU_0845": { sub: "SOFTWARE", tea: "Rupak Sir", room: "516", isLab: false },
-            "THU_1005": { sub: "DRAWING", tea: "Jebu Mam", room: "606", isLab: false },
-            "THU_1315": { sub: "Cyber Security", tea: "Tareq Sir", room: "308", isLab: false }
-        },
-        noticeText: "Welcome to the CSE 60-F CR Dashboard!",
-        tasks: [] 
-    };
-
-    // ফায়ারবেস থেকে রিয়েল-টাইমে ডাটা সিংকিং
-    let appData = defaultData; 
-
-    dashboardRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            appData = data;
-            if(!appData.tasks) appData.tasks = [];
-            
-            // ডাটা আসার সাথে সাথে পেজ আপডেট করা
-            renderDashboard();
-            renderPublicTasks();
-            
-            // নোটিশ বার আপডেট
-            const noticeDisplay = document.getElementById('notice-text-display');
-            const noticeBar = document.getElementById('notice-bar');
-            if (appData.noticeText && noticeDisplay) {
-                noticeDisplay.textContent = appData.noticeText;
-                noticeBar.style.display = 'flex';
-            } else if (noticeBar) {
-                noticeBar.style.display = 'none';
-            }
-        }
-    });
-    // Load data or use default
-    let appData = JSON.parse(localStorage.getItem('crAppData')) || defaultData;
-    // Ensure tasks array exists for old users
-    if(!appData.tasks) appData.tasks = [];
-    
-    let presentIDs = [];
-
-    const routineStructure = [
-        { time: "08:45-10:05", start: "08:45", Mon: "MON_0845", Tue: "TUE_0845", Thu: "THU_0845" },
-        { time: "10:05-11:25", start: "10:05", Mon: "MON_1005", Thu: "THU_1005" },
-        { time: "11:25-12:45", start: "11:25", Mon: "MON_1125", Tue: "TUE_1125" },
-        { time: "12:45-13:15", start: "12:45" }, // Break
-        { time: "13:15-14:35", start: "13:15", Mon: "MON_1315", Tue: "TUE_1315", Thu: "THU_1315" },
-        { time: "14:35-15:55", start: "14:35", Tue: "TUE_1435" }
-    ];
-
-    function tryShowProtectedSection(id) {
-        const password = prompt("Enter password:");
-        if (password === PROTECTED_PASSWORD) show(id);
-        else alert("Incorrect password!");
-    }
-
-    function tryShowSection(id) { show(id); }
-
-    function show(id) {
-        document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
-        // If showing full-table or teacher-info, hide task container to save space, else show it
-        if(id === 'full-table' || id === 'teacher-info') {
-             // Optional: hide tasks if needed, but let's keep it visible on 'home' logic
-             // For now, simple toggling:
-        }
-        
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'block';
-
-        if (id === 'attendance-section') initAttendance();
-        else if (id === 'teacher-info' || id === 'full-table') renderDashboard();
-        else if (id === 'edit-panel') {
-            document.getElementById('json-teachers').value = JSON.stringify(appData.teachers, null, 2);
-            document.getElementById('json-classes').value = JSON.stringify(appData.classes, null, 2);
-            document.getElementById('notice-text').value = appData.noticeText || '';
-            renderSettingsTaskList();
-        }
-    }
-
-    // --- Task Manager Functions ---
-
-    function addNewTask() {
-        const type = document.getElementById('task-type').value;
-        const date = document.getElementById('task-date').value;
-        const time = document.getElementById('task-time').value;
-        const topic = document.getElementById('task-topic').value;
-        const desc = document.getElementById('task-desc').value;
-
-        if(!date || !topic) {
-            alert("Please fill in Date and Topic!");
-            return;
-        }
-
-        const newTask = {
-            id: Date.now(),
-            type,
-            date,
-            time,
-            topic,
-            desc
-        };
-
-        if(!appData.tasks) appData.tasks = [];
-        appData.tasks.push(newTask);
-        
-        // Sort tasks by date
-        appData.tasks.sort((a, b) => new Date(a.date) - new Date(b.date));
-        
-        // Firebase-এ সেভ করা
-        dashboardRef.set(appData).then(() => {
-            // Reset form
-            document.getElementById('task-topic').value = '';
-            document.getElementById('task-desc').value = '';
-            renderSettingsTaskList();
-            renderPublicTasks();
-            alert("নতুন টাস্ক সবার জন্য যোগ হয়েছে!");
-        }).catch(err => {
-            console.error("Error saving task:", err);
-            alert("সেভ করতে সমস্যা হয়েছে!");
-        });
-    }
-
-    function deleteTask(id) {
-        if(confirm("এটি ডিলিট করলে সবার ড্যাশবোর্ড থেকে মুছে যাবে। নিশ্চিত তো?")) {
-            appData.tasks = appData.tasks.filter(t => t.id !== id);
-            
-            // Firebase আপডেট
-            dashboardRef.set(appData).then(() => {
-                renderSettingsTaskList();
-                renderPublicTasks();
-            });
-        }
-    }
-    function renderSettingsTaskList() {
-        const container = document.getElementById('settings-task-list');
-        container.innerHTML = '';
-        appData.tasks.forEach(task => {
-            const div = document.createElement('div');
-            div.style.padding = '8px';
-            div.style.background = 'white';
-            div.style.marginBottom = '5px';
-            div.style.border = '1px solid #ddd';
-            div.style.display = 'flex';
-            div.style.justifyContent = 'space-between';
-            div.innerHTML = `
-                <span><strong>[${task.type}]</strong> ${task.topic} (${task.date})</span>
-                <button onclick="deleteTask(${task.id})" style="color:red;border:none;background:none;cursor:pointer;">❌</button>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function renderPublicTasks() {
-        const container = document.getElementById('task-board');
-        const mainContainer = document.getElementById('active-tasks-container');
-        
-        container.innerHTML = '';
-        
-        if (!appData.tasks || appData.tasks.length === 0) {
-            mainContainer.style.display = 'none';
-            return;
-        }
-
-        mainContainer.style.display = 'block';
-        
-        appData.tasks.forEach(task => {
-            let badgeClass = '';
-            let borderClass = '';
-            
-            if(task.type === 'CT') { badgeClass = 'bg-ct'; borderClass = 'task-type-ct'; }
-            else if(task.type === 'Assignment') { badgeClass = 'bg-assign'; borderClass = 'task-type-assign'; }
-            else { badgeClass = 'bg-lab'; borderClass = 'task-type-lab'; }
-
-            // Format Date
-            const d = new Date(task.date);
-            const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-            
-            // Format Time
-            let timeStr = '';
-            if(task.time) {
-                const [h, m] = task.time.split(':');
-                const ampm = h >= 12 ? 'PM' : 'AM';
-                const h12 = h % 12 || 12;
-                timeStr = ` at ${h12}:${m} ${ampm}`;
-            }
-
-            const html = `
-                <div class="task-item ${borderClass}">
-                    <div class="task-header">
-                        <span class="task-badge ${badgeClass}">${task.type}</span>
-                        <span class="task-date">📅 ${dateStr}${timeStr}</span>
-                    </div>
-                    <div class="task-title">${task.topic}</div>
-                    ${task.desc ? `<div class="task-desc">${task.desc}</div>` : ''}
-                    <div class="task-syllabus">📖 Syllabus: ${task.topic}</div>
-                </div>
-            `;
-            container.innerHTML += html;
-        });
-    }
-
-    // --- Existing Logic ---
-
-    function initAttendance() {
-        const container = document.getElementById('id-container');
-        container.innerHTML = '';
-        let storedIDs = JSON.parse(localStorage.getItem('studentIDs')) || [50, 52, 122];
-        storedIDs.sort((a, b) => a - b);
-        localStorage.setItem('studentIDs', JSON.stringify(storedIDs));
-
-        storedIDs.forEach(id => {
-            const btn = document.createElement('button');
-            btn.className = 'id-btn' + (presentIDs.includes(id) ? ' present' : '');
-            btn.textContent = id;
-            btn.onclick = () => {
-                if (presentIDs.includes(id)) presentIDs = presentIDs.filter(x => x !== id);
-                else presentIDs.push(id);
-                initAttendance();
-                generateOutput();
-            };
-            container.appendChild(btn);
-        });
-        generateOutput();
-    }
-
-    function addStudentID() {
-        const input = document.getElementById('add-id-input');
-        const val = Number(input.value.trim());
-        if (!val) return;
-        let storedIDs = JSON.parse(localStorage.getItem('studentIDs')) || [];
-        if (!storedIDs.includes(val)) {
-            storedIDs.push(val);
-            localStorage.setItem('studentIDs', JSON.stringify(storedIDs));
-            input.value = '';
-            initAttendance();
-        }
-    }
-
-    function generateOutput() {
-        const dateStr = new Date().toLocaleDateString();
-        document.getElementById('attendance-output').value = 
-            `Date: ${dateStr}\nBatch: 60-F\nPresent (${presentIDs.length}):\n${presentIDs.join(', ')}`;
-    }
-
-    function copyAttendance() {
-        const el = document.getElementById('attendance-output');
-        el.select();
-        document.execCommand('copy');
-        alert('Copied!');
-    }
-
-    function resetAttendance() {
-        presentIDs = [];
-        initAttendance();
-    }
-
-    function renderDashboard() {
-        // Teachers: Updated to use Google Classroom label
-        document.getElementById('teacher-list').innerHTML = appData.teachers.map(t => `
-            <div class="teacher-card">
-                <h4>${t.name}</h4>
-                <p><strong>📍 Google Classroom:</strong> ${t.classroom}</p>
-                <p><strong>📚 Courses:</strong> ${t.courses}</p>
-                <p><strong>📧</strong> ${t.email}</p>
-                <p><strong>📞</strong> ${t.phone}</p>
-            </div>
-        `).join('');
-
-        // Routine
-        const tbody = document.getElementById('routine-body');
-        tbody.innerHTML = '';
-        routineStructure.forEach(slot => {
-            let row = `<tr><td style="font-weight:700; color:var(--primary)">${slot.time}</td>`;
-            ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu'].forEach(day => {
-                const info = appData.classes[slot[day]];
-                if (info) {
-                    row += `<td class="${info.isLab ? 'lab-highlight' : ''}">
-                        <div style="font-weight:700">${info.sub}</div>
-                        <div style="font-size:0.7rem; opacity:0.8">${info.tea}</div>
-                        <div style="color:var(--accent); font-weight:700; font-size:0.7rem">${info.room}</div>
-                    </td>`;
-                } else row += '<td>-</td>';
-            });
-            tbody.innerHTML += row + '</tr>';
-        });
-    }
-
-    function updateCountdown() {
-        const now = new Date();
-        const todayIdx = now.getDay();
-        let nextClass = null;
-
-        for (let i = 0; i < 7; i++) {
-            const dayIndex = (todayIdx + i) % 7;
-            const dayName = dayNames[dayIndex];
-            for (const slot of routineStructure) {
-                if (slot[dayName] && appData.classes[slot[dayName]]) {
-                    const [h, m] = slot.start.split(':').map(Number);
-                    const classDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, h, m, 0);
-                    if (classDate > now) {
-                        nextClass = { info: appData.classes[slot[dayName]], time: classDate };
-                        break;
-                    }
-                }
-            }
-            if (nextClass) break;
-        }
-
-        if (nextClass) {
-            const diff = nextClass.time - now;
-            const h = Math.floor(diff / 3600000).toString().padStart(2,'0');
-            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2,'0');
-            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2,'0');
-            document.getElementById('next-class-name').innerText = `${nextClass.info.sub} - Room ${nextClass.info.room}`;
-            document.getElementById('countdown-timer').innerText = `${h}h ${m}m ${s}s`;
-        } else {
-            document.getElementById('next-class-name').innerText = "No classes found";
-        }
-    }
-function addNewTask() {
-    const type = document.getElementById('task-type').value;
-    const date = document.getElementById('task-date').value;
-    const time = document.getElementById('task-time').value;
-    const topic = document.getElementById('task-topic').value;
-    const desc = document.getElementById('task-desc').value;
-
-    if(!date || !topic) {
-        alert("তারিখ এবং টপিক অবশ্যই দিতে হবে!");
-        return;
-    }
-
-    const newTask = {
-        id: Date.now(),
-        type, date, time, topic, desc
-    };
-
-    if(!appData.tasks) appData.tasks = [];
-    appData.tasks.push(newTask);
-    appData.tasks.sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    // ফায়ারবেসে সেভ করা
-    dashboardRef.set(appData).then(() => {
-        alert("নতুন টাস্ক সবার জন্য যোগ হয়েছে!");
-        // ফর্ম রিসেট
-        document.getElementById('task-topic').value = '';
-        document.getElementById('task-desc').value = '';
-    });
+/* ================= FUNCTIONS ================= */
+function protectedShow(id){
+if(prompt("Password?")===PASSWORD) show(id);
+else alert("Wrong password");
 }
-
-    window.onload = () => {
-        document.getElementById('live-date').innerText = new Date().toDateString();
-        if (appData.noticeText) {
-            document.getElementById('notice-text-display').textContent = appData.noticeText;
-            document.getElementById('notice-bar').style.display = 'flex';
-        }
-        show('full-table');
-        renderPublicTasks(); // Show tasks on load
-        setInterval(updateCountdown, 1000);
-    };
+function show(id){
+document.querySelectorAll(".content-section").forEach(s=>s.style.display="none");
+document.getElementById(id).style.display="block";
+if(id==="attendance-section") initAttendance();
+if(id==="edit-panel"){
+json_teachers.value=JSON.stringify(appData.teachers,null,2);
+json_classes.value=JSON.stringify(appData.classes,null,2);
+notice_text.value=appData.noticeText||"";
+}
+}
+function renderAll(){
+renderTasks();
+renderTeachers();
+renderRoutine();
+if(appData.noticeText){
+notice_bar.style.display="block";
+notice_text_display.innerText=appData.noticeText;
+}
+}
+function addNewTask(){
+const t={id:Date.now(),
+type:task_type.value,
+date:task_date.value,
+time:task_time.value,
+topic:task_topic.value,
+desc:task_desc.value};
+if(!t.date||!t.topic) return alert("Required!");
+appData.tasks.push(t);
+ref.set(appData);
+}
+function renderTasks(){
+task_board.innerHTML="";
+if(!appData.tasks.length){active_tasks_container.style.display="none";return;}
+active_tasks_container.style.display="block";
+appData.tasks.forEach(t=>{
+const d=document.createElement("div");
+d.className=`task-item task-type-${t.type==="CT"?"ct":t.type==="Assignment"?"assign":"lab"}`;
+d.innerHTML=`<b>${t.type}</b> | ${t.topic}<br>${t.date}`;
+task_board.appendChild(d);
+});
+}
+function renderTeachers(){
+teacher_list.innerHTML=appData.teachers.map(t=>`
+<div class="card"><b>${t.name}</b><br>${t.courses}</div>
+`).join("");
+}
+function renderRoutine(){
+routine_body.innerHTML="";
+}
+/* ================= ATT ================= */
+function initAttendance(){
+id_container.innerHTML="";
+let ids=JSON.parse(localStorage.getItem("ids"))||[50,52];
+ids.forEach(i=>{
+const b=document.createElement("button");
+b.className="id-btn"+(presentIDs.includes(i)?" present":"");
+b.innerText=i;
+b.onclick=()=>{presentIDs.includes(i)?presentIDs=presentIDs.filter(x=>x!==i):presentIDs.push(i);initAttendance()};
+id_container.appendChild(b);
+});
+attendance_output.value=`Present: ${presentIDs.join(", ")}`;
+}
+document.getElementById("live-date").innerText=new Date().toDateString();
 </script>
 
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('PWA Ready!'))
-        .catch(err => console.log('PWA Failed', err));
-    });
-  }
-</script>
-<link rel="manifest" href="manifest.json">
 </body>
-
 </html>
